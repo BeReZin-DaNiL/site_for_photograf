@@ -1,0 +1,258 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="photographer-detail-page">
+    <!-- Header / Hero Section -->
+    <div class="profile-header-section">
+        <div class="container">
+            <div class="profile-header-content">
+                <div class="profile-avatar-large">
+                    {% if photographer.profile_image %}
+                        <img src="{{ photographer.profile_image.url }}" alt="{{ photographer.user.get_full_name|default:photographer.user.username }}">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ photographer.user.get_full_name|default:photographer.user.username }}&background=e0bbd8&color=fff" alt="Avatar">
+                    {% endif %}
+                </div>
+                <div class="profile-header-info">
+                    <h1 class="profile-name-large">{{ photographer.user.get_full_name|default:photographer.user.username }}</h1>
+                    <p class="profile-intro">{{ photographer.short_intro }}</p>
+                    <div class="profile-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> {{ photographer.city|default:"Город не указан" }}</span>
+                        <span><i class="fas fa-money-bill-wave"></i> {{ photographer.price }} ₽/час</span>
+                        <span><i class="fas fa-globe"></i> {{ photographer.get_language_display }}</span>
+                        <span class="views-count"><i class="far fa-eye"></i> {{ photographer.views_count }}</span>
+                    </div>
+
+                    <div class="profile-socials" style="margin-top: 20px; display: flex; gap: 10px;">
+                        {% if photographer.website %}
+                            <a href="{{ photographer.website }}" target="_blank" class="social-btn" title="Сайт"><i class="fas fa-globe"></i></a>
+                        {% endif %}
+                        {% if photographer.social_vk %}
+                            <a href="{{ photographer.social_vk }}" target="_blank" class="social-btn" title="VK"><i class="fab fa-vk"></i></a>
+                        {% endif %}
+                        {% if photographer.social_telegram %}
+                            <a href="https://t.me/{{ photographer.social_telegram|cut:'@' }}" target="_blank" class="social-btn" title="Telegram"><i class="fab fa-telegram"></i></a>
+                        {% endif %}
+                        {% if photographer.phone_number %}
+                            <a href="tel:{{ photographer.phone_number }}" class="social-btn" title="Позвонить"><i class="fas fa-phone"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container content-container">
+        <div class="profile-grid-layout" {% if user == photographer.user %}style="grid-template-columns: 1fr;"{% endif %}>
+            <!-- Left Column: Bio & Portfolio -->
+            <div class="profile-main-column">
+                {% if photographer.bio and photographer.bio != "Расскажите о себе..." %}
+                <section class="bio-section">
+                    <h3>О себе</h3>
+                    <div class="bio-text">
+                        {{ photographer.bio|linebreaks }}
+                    </div>
+                </section>
+                {% endif %}
+
+                <section class="portfolio-section">
+                    <div class="portfolio-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <h3 style="margin-bottom: 0;">Портфолио</h3>
+                        <div class="portfolio-tabs">
+                            <button class="tab-btn active" onclick="filterPortfolio('all', this)">Все</button>
+                            {% for code, name in specialization_choices %}
+                                <button class="tab-btn" onclick="filterPortfolio('{{ code }}', this)">{{ name }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="portfolio-masonry">
+                        {% for photo in photos %}
+                            <div class="portfolio-item-large" data-category="{{ photo.category }}" style="position: relative;">
+                                <img src="{{ photo.image.url }}" alt="Photo">
+                                {% if user.is_authenticated %}
+                                <button class="like-btn" 
+                                        data-id="{{ photo.id }}" 
+                                        onclick="toggleLike(this, {{ photo.id }})"
+                                        style="position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; z-index: 10;">
+                                    <i class="{% if photo.is_liked %}fas{% else %}far{% endif %} fa-heart" style="color: {% if photo.is_liked %}#e91e63{% else %}#333{% endif %}; font-size: 1.2rem;"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <div class="no-photos">
+                                <i class="fas fa-camera"></i>
+                                <p>У фотографа пока нет работ.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Booking Form -->
+            {% if user != photographer.user %}
+            <div class="profile-sidebar-column">
+                <div class="booking-card-sticky">
+                    {% if photographer.phone_number or photographer.website or photographer.social_vk or photographer.social_telegram %}
+                    <div class="contact-section" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
+                        <h3 style="font-size: 1.2rem; margin-bottom: 15px;">Контакты</h3>
+                        <ul class="contact-list" style="list-style: none; padding: 0;">
+                            {% if photographer.phone_number %}
+                            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: rgba(106, 27, 154, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-phone-alt" style="color: var(--primary-color); font-size: 0.9rem;"></i>
+                                </div>
+                                <a href="tel:{{ photographer.phone_number }}" style="color: var(--text-dark); font-weight: 600; font-size: 1.05rem;">{{ photographer.phone_number }}</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% if photographer.website %}
+                            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: rgba(106, 27, 154, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-globe" style="color: var(--primary-color); font-size: 0.9rem;"></i>
+                                </div>
+                                <a href="{{ photographer.website }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); font-weight: 500;">Личный сайт</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% if photographer.social_vk %}
+                            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: rgba(106, 27, 154, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fab fa-vk" style="color: var(--primary-color); font-size: 0.9rem;"></i>
+                                </div>
+                                <a href="{{ photographer.social_vk }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); font-weight: 500;">ВКонтакте</a>
+                            </li>
+                            {% endif %}
+
+                            {% if photographer.social_telegram %}
+                            <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: rgba(106, 27, 154, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fab fa-telegram" style="color: var(--primary-color); font-size: 0.9rem;"></i>
+                                </div>
+                                <a href="https://t.me/{{ photographer.social_telegram|cut:'@' }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); font-weight: 500;">Telegram</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <h3>Оставить заявку</h3>
+                    {% if user.is_authenticated %}
+                        <form method="post" class="booking-form-modern">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label>Ваш телефон</label>
+                                {{ booking_form.contact_phone }}
+                                {% for error in booking_form.contact_phone.errors %}
+                                    <div class="text-danger" style="font-size: 0.85rem; margin-top: 5px;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                <label>Сообщение</label>
+                                {{ booking_form.message }}
+                                {% for error in booking_form.message.errors %}
+                                    <div class="text-danger" style="font-size: 0.85rem; margin-top: 5px;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" name="submit_booking" class="btn btn-primary btn-block">Отправить заявку</button>
+                        </form>
+                    {% else %}
+                        <div class="login-prompt">
+                            <p>Пожалуйста, <a href="{% url 'login' %}" style="color: var(--primary-color); font-weight: bold;">войдите</a>, чтобы оставить заявку.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleLike(btn, photoId) {
+        // Use Django's url tag to generate the base path, replacing the dummy ID '0' with the actual photoId
+        const url = "{% url 'toggle_photo_like' 0 %}".replace('0', photoId);
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const icon = btn.querySelector('i');
+                if (data.is_liked) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    icon.style.color = '#e91e63';
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    icon.style.color = '#333';
+                }
+            } else if (data.status === 'error') {
+                // Show error toast
+                showToast(data.message || 'Произошла ошибка', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Произошла ошибка при отправке запроса', 'error');
+        });
+    }
+    function filterPortfolio(category, btn) {
+        // Update active button
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Filter items
+        const items = document.querySelectorAll('.portfolio-item-large');
+        items.forEach(item => {
+            if (category === 'all' || item.dataset.category === category) {
+                item.style.display = ''; 
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+</script>
+
+<style>
+.portfolio-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+}
+.portfolio-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Webkit */
+}
+.tab-btn {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    color: #555;
+    outline: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.tab-btn:hover {
+    background: #e9ecef;
+}
+.tab-btn.active {
+    background: var(--primary-color, #6a1b9a);
+    color: white;
+    border-color: var(--primary-color, #6a1b9a);
+}
+</style>
+{% endblock %}

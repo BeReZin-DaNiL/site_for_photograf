@@ -1,0 +1,174 @@
+from django import forms
+from django.contrib.auth.models import User
+from .models import PhotographerProfile, Photo, BookingRequest, ClientProfile, SupportRequest, SPECIALIZATION_CHOICES
+
+class SupportRequestForm(forms.ModelForm):
+    class Meta:
+        model = SupportRequest
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(attrs={'rows': 5, 'placeholder': 'Опишите вашу проблему подробно...', 'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['message'].label = "Ваш вопрос"
+
+class UserRegistrationForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, label="Пароль")
+    confirm_password = forms.CharField(widget=forms.PasswordInput, label="Повторите пароль")
+    is_photographer = forms.BooleanField(required=False, widget=forms.HiddenInput(), label="Я фотограф")
+
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+        help_texts = {
+            'username': '',
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if password != confirm_password:
+            self.add_error('confirm_password', "Пароли не совпадают")
+        return cleaned_data
+
+class PhotographerProfileForm(forms.ModelForm):
+    first_name = forms.CharField(label="Имя", required=False)
+    last_name = forms.CharField(label="Фамилия", required=False)
+    email = forms.EmailField(label="Email", required=True)
+
+    class Meta:
+        model = PhotographerProfile
+        fields = ['first_name', 'last_name', 'email', 'short_intro', 'bio', 'city', 'specialization', 'price', 'language', 'phone_number', 'social_vk', 'social_telegram', 'website', 'profile_image']
+        labels = {
+            'short_intro': 'Кратко о себе',
+            'bio': 'Биография',
+            'city': 'Город',
+            'specialization': 'Специализация',
+            'price': 'Стоимость часа (RUB)',
+            'language': 'Язык',
+            'phone_number': 'Номер телефона',
+            'social_vk': 'ВКонтакте',
+            'social_telegram': 'Telegram',
+            'website': 'Личный сайт',
+            'profile_image': 'Фото профиля'
+        }
+        widgets = {
+            'bio': forms.Textarea(attrs={'rows': 4}),
+            'short_intro': forms.TextInput(attrs={'placeholder': 'Например: Свадебный фотограф в Москве'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control price-input', 'placeholder': '0'}),
+            'phone_number': forms.TextInput(attrs={'class': 'phone-mask', 'placeholder': '+7 (___) ___-__-__'}),
+            'social_vk': forms.URLInput(attrs={'placeholder': 'https://vk.com/...'}),
+            'social_telegram': forms.TextInput(attrs={'placeholder': 'username'}),
+            'website': forms.URLInput(attrs={'placeholder': 'https://mysite.com'}),
+        }
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number')
+        if phone:
+            import re
+            pattern = re.compile(r'^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$')
+            if not pattern.match(phone):
+                raise forms.ValidationError("Введите корректный номер телефона в формате +7 (999) 999-99-99")
+        return phone
+
+    def __init__(self, *args, **kwargs):
+        super(PhotographerProfileForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+
+    def save(self, commit=True):
+        profile = super(PhotographerProfileForm, self).save(commit=False)
+        if commit:
+            profile.save()
+            user = profile.user
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.email = self.cleaned_data['email']
+            user.save()
+        return profile
+
+class PhotoUploadForm(forms.Form):
+    image = forms.ImageField(widget=forms.ClearableFileInput(), label='Загрузить фото')
+    category = forms.ChoiceField(choices=SPECIALIZATION_CHOICES, label='Категория', initial='wedding')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['image'].widget.attrs.update({'multiple': True})
+        self.fields['category'].widget.attrs.update({'class': 'form-control'})
+
+class ClientProfileForm(forms.ModelForm):
+    first_name = forms.CharField(label="Имя", required=False)
+    last_name = forms.CharField(label="Фамилия", required=False)
+    email = forms.EmailField(label="Email", required=True)
+
+    class Meta:
+        model = ClientProfile
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'profile_image']
+        labels = {
+            'phone_number': 'Номер телефона',
+            'profile_image': 'Фото профиля'
+        }
+        widgets = {
+            'phone_number': forms.TextInput(attrs={'class': 'phone-mask', 'placeholder': '+7 (___) ___-__-__'}),
+        }
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number')
+        if phone:
+            import re
+            pattern = re.compile(r'^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$')
+            if not pattern.match(phone):
+                raise forms.ValidationError("Введите корректный номер телефона в формате +7 (999) 999-99-99")
+        return phone
+
+    def __init__(self, *args, **kwargs):
+        super(ClientProfileForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+
+    def save(self, commit=True):
+        profile = super(ClientProfileForm, self).save(commit=False)
+        if commit:
+            profile.save()
+            user = profile.user
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.email = self.cleaned_data['email']
+            user.save()
+        return profile
+
+class BookingRequestForm(forms.ModelForm):
+    class Meta:
+        model = BookingRequest
+        fields = ['message', 'contact_phone']
+        widgets = {
+            'message': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Опишите ваше событие (дата, место, пожелания)...'}),
+            'contact_phone': forms.TextInput(attrs={
+                'class': 'phone-mask',
+                'placeholder': '+ 7 (___) ___-__-__', 
+                'id': 'phone-input',
+                # 'pattern': r'\+ 7 \d{3} \d{3} \d{2} \d{2}', # Removed strict pattern as mask handles it
+                'minlength': '18', # +7 (XXX) XXX-XX-XX is 18 chars
+                'maxlength': '18'
+            }),
+        }
+
+    def clean_contact_phone(self):
+        phone = self.cleaned_data.get('contact_phone')
+        import re
+        # Expected format: +7 (999) 999-99-99
+        # Allow spaces or dashes as separators for flexibility if needed, but mask enforces specific format
+        # Mask format: +7 (XXX) XXX-XX-XX
+        pattern = re.compile(r'^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$')
+        if not pattern.match(phone):
+            raise forms.ValidationError("Введите корректный номер телефона в формате +7 (999) 999-99-99")
+        return phone
+
