@@ -13,7 +13,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="{% static 'styles.css' %}?v=lightbox1">
     <!-- Phone Mask JS -->
     <script src="{% static 'js/phone-mask.js' %}"></script>
 </head>
@@ -107,6 +107,15 @@
         </div>
     </div>
 
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <button class="lightbox-nav lightbox-prev" aria-label="Назад"><i class="fas fa-chevron-left"></i></button>
+        <button class="lightbox-nav lightbox-next" aria-label="Вперед"><i class="fas fa-chevron-right"></i></button>
+        <img class="lightbox-content" id="lightbox-img">
+        <div id="lightbox-caption"></div>
+    </div>
+
     <script>
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast-notification');
@@ -174,6 +183,141 @@
                         userMenu.classList.toggle('active');
                     }
                 });
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lightbox functionality
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxCaption = document.getElementById('lightbox-caption');
+            const closeBtn = document.querySelector('.lightbox-close');
+            const prevBtn = document.querySelector('.lightbox-prev');
+            const nextBtn = document.querySelector('.lightbox-next');
+
+            if (lightbox) {
+                const photoImages = Array.from(document.querySelectorAll('.photo-card img.photo-img'));
+                let currentIndex = -1;
+                lightbox.style.display = 'none';
+                function showLightbox() {
+                    lightbox.style.display = 'flex';
+                    lightbox.style.position = 'fixed';
+                    lightbox.style.left = '0';
+                    lightbox.style.top = '0';
+                    lightbox.style.width = '100%';
+                    lightbox.style.height = '100%';
+                    lightbox.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+                    lightbox.style.zIndex = '9999';
+                    lightbox.style.justifyContent = 'center';
+                    lightbox.style.alignItems = 'center';
+                    lightbox.style.flexDirection = 'column';
+                    lightbox.classList.add('active');
+                }
+
+                function hideLightbox() {
+                    lightbox.classList.remove('active');
+                    lightbox.style.display = 'none';
+                    currentIndex = -1;
+                }
+
+                function syncNav() {
+                    if (!prevBtn || !nextBtn) {
+                        return;
+                    }
+                    if (currentIndex <= 0) {
+                        prevBtn.style.display = 'none';
+                    } else {
+                        prevBtn.style.display = 'flex';
+                    }
+                    if (currentIndex >= photoImages.length - 1 || currentIndex === -1) {
+                        nextBtn.style.display = 'none';
+                    } else {
+                        nextBtn.style.display = 'flex';
+                    }
+                }
+
+                function openAt(index) {
+                    if (index < 0 || index >= photoImages.length) {
+                        return;
+                    }
+                    currentIndex = index;
+                    lightboxImg.src = photoImages[index].src;
+                    lightboxCaption.textContent = photoImages[index].alt;
+                    showLightbox();
+                    syncNav();
+                }
+
+                // Close when clicking the close button
+                closeBtn.addEventListener('click', function() {
+                    hideLightbox();
+                });
+
+                // Close when clicking outside the image
+                lightbox.addEventListener('click', function(e) {
+                    if (e.target === lightbox) {
+                        hideLightbox();
+                    }
+                });
+
+                // Close on Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                        hideLightbox();
+                    }
+                    if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                        openAt(currentIndex - 1);
+                    }
+                    if (e.key === 'ArrowRight' && currentIndex < photoImages.length - 1) {
+                        openAt(currentIndex + 1);
+                    }
+                });
+
+                // Delegate click event for images
+                document.body.addEventListener('click', function(e) {
+                    // Check if clicked element is a photo card or inside one
+                    const photoCard = e.target.closest('.photo-card');
+                    
+                    if (photoCard) {
+                        // Ignore if clicked on a link or button
+                        if (e.target.closest('a') || e.target.closest('button')) {
+                            return;
+                        }
+
+                        const img = photoCard.querySelector('img.photo-img');
+                        if (img) {
+                            e.preventDefault(); // Prevent default behavior
+                            const index = photoImages.indexOf(img);
+                            if (index !== -1) {
+                                openAt(index);
+                            } else {
+                                currentIndex = -1;
+                                showLightbox();
+                                lightboxImg.src = img.src;
+                                lightboxCaption.textContent = img.alt;
+                                syncNav();
+                            }
+                        }
+                    }
+                });
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            openAt(currentIndex - 1);
+                        }
+                    });
+                }
+
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (currentIndex < photoImages.length - 1) {
+                            openAt(currentIndex + 1);
+                        }
+                    });
+                }
             }
         });
     </script>
