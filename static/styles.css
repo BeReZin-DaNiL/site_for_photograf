@@ -1585,12 +1585,14 @@ input:checked + .slider:before {
 .lightbox-content {
     margin: auto;
     display: block;
-    width: 80%;
-    max-width: 1200px;
-    max-height: 80vh;
+    /* Force consistent size for all images */
+    width: 90vw;
+    height: 85vh;
+    /* Ensure image fits within the box without distortion */
     object-fit: contain;
     animation-name: zoom;
     animation-duration: 0.6s;
+    border-radius: 4px;
 }
 
 @keyframes zoom {

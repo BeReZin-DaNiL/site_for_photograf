@@ -13,7 +13,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'styles.css' %}?v=lightbox1">
+    <link rel="stylesheet" href="{% static 'styles.css' %}?v=lightbox2">
     <!-- Phone Mask JS -->
     <script src="{% static 'js/phone-mask.js' %}"></script>
 </head>
@@ -26,7 +26,7 @@
                     <i class="fas fa-camera-retro"></i> World Photo
                 </a>
                 
-                <button class="burger-btn" id="burgerBtn">
+                <button type="button" class="burger-btn" id="burgerBtn">
                     <span></span>
                     <span></span>
                     <span></span>
@@ -42,7 +42,7 @@
                         {% if user.is_authenticated %}
                             <li class="user-menu-item">
                                 <div class="user-menu">
-                                    <button class="user-avatar-btn">
+                                    <button type="button" class="user-avatar-btn">
                                         <img src="{{ user|get_avatar_url }}" alt="{{ user.username }}" class="user-avatar-img">
                                         <i class="fas fa-chevron-down"></i>
                                     </button>
@@ -149,11 +149,11 @@
             {% if messages %}
                 {% for message in messages %}
                     {% if message.tags == 'success' %}
-                        showToast("{{ message }}", 'success');
+                        showToast("{{ message|escapejs }}", 'success');
                     {% elif message.tags == 'error' %}
-                        showToast("{{ message }}", 'error');
+                        showToast("{{ message|escapejs }}", 'error');
                     {% else %}
-                        showToast("{{ message }}", 'success');
+                        showToast("{{ message|escapejs }}", 'success');
                     {% endif %}
                 {% endfor %}
             {% endif %}
@@ -166,7 +166,8 @@
             const navMenu = document.getElementById('navMenu');
 
             if (burgerBtn && navMenu) {
-                burgerBtn.addEventListener('click', function() {
+                burgerBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     burgerBtn.classList.toggle('active');
                     navMenu.classList.toggle('active');
                     document.body.classList.toggle('no-scroll');
@@ -179,6 +180,7 @@
             
             if (userAvatarBtn && userMenu) {
                 userAvatarBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     if (window.innerWidth <= 768) {
                         userMenu.classList.toggle('active');
                     }
@@ -249,13 +251,15 @@
                 }
 
                 // Close when clicking the close button
-                closeBtn.addEventListener('click', function() {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     hideLightbox();
                 });
 
                 // Close when clicking outside the image
                 lightbox.addEventListener('click', function(e) {
                     if (e.target === lightbox) {
+                        e.preventDefault();
                         hideLightbox();
                     }
                 });
