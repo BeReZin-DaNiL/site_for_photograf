@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
 from PIL import Image
 from io import BytesIO
@@ -197,7 +198,7 @@ class News(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     image = models.ImageField(upload_to='news_images', blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата публикации")
 
     def __str__(self):
         return self.title
